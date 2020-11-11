@@ -11,25 +11,25 @@ use SimpleSAML\Logger;
  * A filter for limiting which attributes are passed on.
  *
  * Example config
- * XX => array(
+ * XX => [
  *     'class' => 'attributelimit:DynamicAttributeLimit',
- *     'allowedAttributes' => array(
+ *     'allowedAttributes' => [
  *         'displayName',
- *         'eduPersonEntitlement' => array(
+ *         'eduPersonEntitlement' => [
  *             'regex' => true,
  *             '/^urn:mace:egi.eu:/i',
- *         ),
- *     ),
- *     'eppnFromIdp' => array(
+ *         ],
+ *     ],
+ *     'eppnFromIdp' => [
  *         'idpEntityId01',
  *         'idpEntityId02',
- *     ),
- *     'eppnToSp' => array(
+ *     ],
+ *     'eppnToSp' => [
  *         'spEntityId01',
  *         'spEntityId02',
  *         'spEntityId03',
- *     ),
- * ),
+ *     ],
+ * ],
  *
  * @author Olav Morken, UNINETT AS.
  * @author Nicolas Liampotis <nicolas.liampotis@gmail.com>
@@ -42,22 +42,22 @@ class DynamicAttributeLimit extends ProcessingFilter
     /**
      * List of attributes which this filter will allow through.
      */
-    private $allowedAttributes = array();
+    private $allowedAttributes = [];
 
     /**
      * List of IdP entityIDs that release ePPN
      */
-    private $eppnFromIdp = array();
+    private $eppnFromIdp = [];
 
     /**
      * List of SP entityIDs that require ePPN
      */
-    private $eppnToSp = array();
+    private $eppnToSp = [];
 
     /**
      * Associative array with the mappings of attribute names.
      */
-    private $map = array();
+    private $map = [];
 
     private $duplicate = false;
 
@@ -121,7 +121,7 @@ class DynamicAttributeLimit extends ProcessingFilter
             // IdP Config
             return $request['Source']['attributes'];
         }
-        return array();
+        return [];
     }
 
 
@@ -146,7 +146,7 @@ class DynamicAttributeLimit extends ProcessingFilter
                 "[DynamicAttributeLimit] process: SP="
                 . var_export($request['SPMetadata']['entityid'], true)
             );
-            $idpEntityId = array();
+            $idpEntityId = [];
             if (!empty($request['Attributes']['idpEntityId'])) {
                 $idpEntityId = $request['Attributes']['idpEntityId'];
             }
@@ -158,7 +158,7 @@ class DynamicAttributeLimit extends ProcessingFilter
                 );
             }
         }
-        $metadataAllowedAttributes = array_merge(array(), self::getSPIdPAllowed($request));
+        $metadataAllowedAttributes = array_merge([], self::getSPIdPAllowed($request));
         $this->loadMapFile('oid2name');
         foreach ($metadataAllowedAttributes as $key => $name) {
             if (array_key_exists($name, $this->map)) {
