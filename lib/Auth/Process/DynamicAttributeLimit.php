@@ -2,9 +2,14 @@
 
 namespace SimpleSAML\Module\attributelimit\Auth\Process;
 
+use SimpleSAML\Auth\ProcessingFilter;
+use SimpleSAML\Configuration;
+use SimpleSAML\Error\Exception;
+use SimpleSAML\Logger;
+
 /**
  * A filter for limiting which attributes are passed on.
- * 
+ *
  * Example config
  * XX => array(
  *     'class' => 'attributelimit:DynamicAttributeLimit',
@@ -31,7 +36,7 @@ namespace SimpleSAML\Module\attributelimit\Auth\Process;
  * @author Nick Evangelou <nikos.ev@hotmail.com>
  * @package SimpleSAMLphp
  */
-class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
+class DynamicAttributeLimit extends ProcessingFilter
 {
 
     /**
@@ -61,7 +66,7 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
      *
      * @param array $config  Configuration information about this filter.
      * @param mixed $reserved  For future use
-     * @throws SimpleSAML\Error\Exception If invalid configuration is found.
+     * @throws Exception If invalid configuration is found.
      */
     public function __construct($config, $reserved)
     {
@@ -71,25 +76,28 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
 
         if (array_key_exists('allowedAttributes', $config)) {
             if (!is_array($config['allowedAttributes'])) {
-                SimpleSAML\Logger::error("[attrauthcomanage] Configuration error: 'allowedAttributes' not an array");
-                throw new SimpleSAML\Error\Exception(
-                    "attrauthcomanage configuration error: 'allowedAttributes' not an array");
+                Logger::error("[DynamicAttributeLimit] Configuration error: 'allowedAttributes' not an array");
+                throw new Exception(
+                    "DynamicAttributeLimit configuration error: 'allowedAttributes' not an array"
+                );
             }
             $this->allowedAttributes = $config['allowedAttributes'];
         }
         if (array_key_exists('eppnFromIdp', $config)) {
             if (!is_array($config['eppnFromIdp'])) {
-                SimpleSAML\Logger::error("[attrauthcomanage] Configuration error: 'eppnFromIdp' not an array");
-                throw new SimpleSAML\Error\Exception(
-                    "attrauthcomanage configuration error: 'eppnFromIdp' not an array");
+                Logger::error("[DynamicAttributeLimit] Configuration error: 'eppnFromIdp' not an array");
+                throw new Exception(
+                    "DynamicAttributeLimit configuration error: 'eppnFromIdp' not an array"
+                );
             }
             $this->eppnFromIdp = $config['eppnFromIdp'];
         }
         if (array_key_exists('eppnToSp', $config)) {
             if (!is_array($config['eppnToSp'])) {
-                SimpleSAML\Logger::error("[attrauthcomanage] Configuration error: 'eppnToSp' not an array");
-                throw new SimpleSAML\Error\Exception(
-                    "attrauthcomanage configuration error: 'eppnToSp' not an array");
+                Logger::error("[DynamicAttributeLimit] Configuration error: 'eppnToSp' not an array");
+                throw new Exception(
+                    "DynamicAttributeLimit configuration error: 'eppnToSp' not an array"
+                );
             }
             $this->eppnToSp = $config['eppnToSp'];
         }
@@ -100,7 +108,7 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
      * Get list of allowed from the SP/IdP config.
      *
      * @param array &$request  The current request.
-     * @return array|NULL  Array with attribute names, or NULL if no limit is placed.
+     * @return array|null  Array with attribute names, or null if no limit is placed.
      */
     private static function getSPIdPAllowed(array &$request)
     {
@@ -123,17 +131,20 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
      * Removes all attributes which aren't one of the allowed attributes.
      *
      * @param array &$request  The current request
-     * @throws SimpleSAML\Error\Exception If invalid configuration is found.
+     * @throws Exception If invalid configuration is found.
      */
     public function process(&$request)
     {
         assert('is_array($request)');
         assert('array_key_exists("Attributes", $request)');
 
-        if (isset($request['SPMetadata']['entityid']) && in_array($request['SPMetadata']['entityid'], $this->eppnToSp)) {
-            SimpleSAML\Logger::debug(
+        if (
+            isset($request['SPMetadata']['entityid'])
+            && in_array($request['SPMetadata']['entityid'], $this->eppnToSp)
+        ) {
+            Logger::debug(
                 "[DynamicAttributeLimit] process: SP="
-                    . var_export($request['SPMetadata']['entityid'], true)
+                . var_export($request['SPMetadata']['entityid'], true)
             );
             $idpEntityId = array();
             if (!empty($request['Attributes']['idpEntityId'])) {
@@ -141,9 +152,9 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
             }
             if (!empty(array_intersect($idpEntityId, $this->eppnFromIdp))) {
                 $this->allowedAttributes[] = "eduPersonPrincipalName";
-                SimpleSAML\Logger::debug(
+                Logger::debug(
                     "[DynamicAttributeLimit] process: allowed attrs= "
-                        . var_export($this->allowedAttributes, true)
+                    . var_export($this->allowedAttributes, true)
                 );
             }
         }
@@ -153,7 +164,10 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
             if (array_key_exists($name, $this->map)) {
                 if (!is_array($this->map[$name])) {
                     if (!$this->duplicate) {
-                        SimpleSAML\Logger::debug("[DynamicAttributeLimit] unset mdAllowedAttributes[" . var_export($name, true) . "]");
+                        Logger::debug(
+                            "[DynamicAttributeLimit] process: unset mdAllowedAttributes["
+                            . var_export($name, true) . "]"
+                        );
                         unset($metadataAllowedAttributes[$key]);
                     }
                     $metadataAllowedAttributes[] = $this->map[$name];
@@ -161,15 +175,17 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
                     foreach ($this->map[$name] as $toMap) {
                         $metadataAllowedAttributes[] = $toMap;
                     }
-                    if (!$this->duplicate && !in_array($name, $this->map[$name], TRUE)) {
+                    if (!$this->duplicate && !in_array($name, $this->map[$name], true)) {
                         unset($metadataAllowedAttributes[$key]);
                     }
                 }
             }
         }
-        SimpleSAML\Logger::debug("[DynamicAttributeLimit] mdAllowedAttributes=" . var_export($metadataAllowedAttributes, true));
+        Logger::debug(
+            "[DynamicAttributeLimit] process: mdAllowedAttributes=" . var_export($metadataAllowedAttributes, true)
+        );
         if (empty($this->allowedAttributes) && empty($metadataAllowedAttributes)) {
-            SimpleSAML\Logger::debug("[DynamicAttributeLimit] No limit on attributes");
+            Logger::debug("[DynamicAttributeLimit] process: No limit on attributes");
             return; /* No limit on attributes. */
         }
         if (!empty($this->allowedAttributes)) {
@@ -182,17 +198,20 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
         } else {
             $allowedAttributes = $metadataAllowedAttributes;
         }
-        SimpleSAML\Logger::debug("[DynamicAttributeLimit] allowedAttributes=" . var_export($allowedAttributes, true));
+        Logger::debug("[DynamicAttributeLimit] process: allowedAttributes=" . var_export($allowedAttributes, true));
 
         $attributes = &$request['Attributes'];
 
         foreach ($attributes as $name => $values) {
-            if (!in_array($name, $allowedAttributes, TRUE)) {
+            if (!in_array($name, $allowedAttributes, true)) {
                 // the attribute name is not in the array of allowed attributes
                 if (array_key_exists($name, $allowedAttributes)) {
                     // but it is an index of the array
                     if (!is_array($allowedAttributes[$name])) {
-                        throw new SimpleSAML\Error\Exception('AttributeLimit: Values for ' . var_export($name, TRUE) . ' must be specified in an array.');
+                        throw new Exception(
+                            '[DynamicAttributeLimit]: process: Values for ' . var_export($name, true)
+                            . ' must be specified in an array.'
+                        );
                     }
                     $attributes[$name] = $this->filterAttributeValues($attributes[$name], $allowedAttributes[$name]);
                     if (!empty($attributes[$name])) {
@@ -211,14 +230,14 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
      */
     private function loadMapFile($fileName)
     {
-        $config = SimpleSAML\Configuration::getInstance();
+        $config = Configuration::getInstance();
         $filePath = $config->getPathValue('attributenamemapdir', 'attributemap/') . $fileName . '.php';
 
         if (!file_exists($filePath)) {
             throw new Exception('Could not find attributemap file: ' . $filePath);
         }
 
-        $attributemap = NULL;
+        $attributemap = null;
         include($filePath);
         if (!is_array($attributemap)) {
             throw new Exception('Attribute map file "' . $filePath . '" didn\'t define an attribute map.');
@@ -251,7 +270,10 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
                     // prevents us from testing with invalid regex.
                     $regexResult = @preg_match($pattern, $attributeValue);
                     if ($regexResult === false) {
-                        SimpleSAML\Logger::warning("Error processing regex '$pattern' on value '$attributeValue'");
+                        Logger::warning(
+                            "[DynamicAttributeLimit] filterAttributeValues: "
+                            . "Error processing regex '$pattern' on value '$attributeValue'"
+                        );
                         break;
                     } elseif ($regexResult === 1) {
                         $matchedValues[] = $attributeValue;
@@ -277,7 +299,8 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
      *
      * @return array  Flattened array list of allowed Attributes
      */
-    private function flattenAllowedAttributes($allowedAttributes) {
+    private function flattenAllowedAttributes($allowedAttributes)
+    {
         if (empty($allowedAttributes)) {
             return array();
         }
