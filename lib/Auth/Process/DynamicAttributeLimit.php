@@ -50,7 +50,7 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
     private $eppnToSp = array();
 
     /**
-     * Assosiative array with the mappings of attribute names.
+     * Associative array with the mappings of attribute names.
      */
     private $map = array();
 
@@ -158,8 +158,8 @@ class DynamicAttributeLimit extends \SimpleSAML\Auth\ProcessingFilter
                     }
                     $metadataAllowedAttributes[] = $this->map[$name];
                 } else {
-                    foreach ($this->map[$name] as $to_map) {
-                        $metadataAllowedAttributes[] = $to_map;
+                    foreach ($this->map[$name] as $toMap) {
+                        $metadataAllowedAttributes[] = $toMap;
                     }
                     if (!$this->duplicate && !in_array($name, $this->map[$name], TRUE)) {
                         unset($metadataAllowedAttributes[$key]);
