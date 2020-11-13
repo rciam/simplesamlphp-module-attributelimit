@@ -237,6 +237,8 @@ class DynamicAttributeLimit extends ProcessingFilter
             throw new Exception('Could not find attributemap file: ' . $filePath);
         }
 
+        // Reminder: Don't change the case of this variable (as described in PSR-12)
+        // this is how the array is defined in the attribute map file
         $attributemap = null;
         include($filePath);
         if (!is_array($attributemap)) {
