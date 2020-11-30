@@ -174,7 +174,8 @@ class sspmod_attributelimit_Auth_Process_DynamicAttributeLimit extends SimpleSAM
             if (empty($metadataAllowedAttributes)) {
                 $allowedAttributes = $this->allowedAttributes;
             } else {
-                $allowedAttributes = array_intersect($this->allowedAttributes, $metadataAllowedAttributes);
+                $allowedAttributes = $this->flattenAllowedAttributes($this->allowedAttributes);
+                $allowedAttributes = array_intersect($allowedAttributes, $metadataAllowedAttributes);
             }
         } else {
             $allowedAttributes = $metadataAllowedAttributes;
@@ -267,5 +268,27 @@ class sspmod_attributelimit_Auth_Process_DynamicAttributeLimit extends SimpleSAM
         unset($allowedConfigValues['regex']);
 
         return array_intersect($values, $allowedConfigValues);
+    }
+
+    /**
+     * @param array $allowedAttributes
+     *
+     * @return array  Flattened array list of allowed Attributes
+     */
+    private function flattenAllowedAttributes($allowedAttributes) {
+        if (empty($allowedAttributes)) {
+            return array();
+        }
+
+        return array_map(
+            static function ($key, $value) {
+                if (is_array($value) && is_string($key)) {
+                    return $key;
+                }
+                return $value;
+            },
+            array_keys($allowedAttributes),
+            $allowedAttributes
+        );
     }
 }
